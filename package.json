@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@types/lodash": "^4.14.149",
+    "html-webpack-plugin": "^4.0.3",
+    "ts-loader": "^6.2.2",
+    "typescript": "^3.8.3",
+    "webpack": "^4.42.1",
+    "webpack-cli": "^3.3.11"
+  },
+  "scripts": {
+    "build": "node_modules/.bin/webpack --config webpack.config.js --mode development"
+  }
+}
