@@ -12,9 +12,6 @@ class Polynomial {
     this.degree = degree;
     this.coefficients = new Array(degree+1);
   }
-  y0(): number {
-    return this.coefficients[0];
-  }
   f(x: number): number {
     let y = 0;
     for (let i = 0; i <= this.degree; i++) {

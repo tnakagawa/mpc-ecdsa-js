@@ -32,16 +32,16 @@ describe('getRandomPolynomial', function() {
     // 0 degree: f(x) = 1
     const poly0 = getRandomPolynomial(0, secret);
     expect(poly0.coefficients.length).toEqual(1);
-    expect(poly0.y0()).toEqual(secret);
+    expect(poly0.f(0)).toEqual(secret);
 
     // // 1 degree: f(x) = 1 + a*x
     const poly1 = getRandomPolynomial(1, secret);
     expect(poly1.coefficients.length).toEqual(2);
-    expect(poly1.y0()).toEqual(secret);
+    expect(poly1.f(0)).toEqual(secret);
 
     // // 2 degree: f(x) = 1 + a*x + b*x^2
     const poly2 = getRandomPolynomial(2, secret);
     expect(poly2.coefficients.length).toEqual(3);
-    expect(poly2.y0()).toEqual(secret);
+    expect(poly2.f(0)).toEqual(secret);
   });
 });
