@@ -1,24 +1,19 @@
-const webpackConfig = require('./webpack.config.js');
+const webpackConfig = require('./webpack.config');
 
 module.exports = (config) => {
   config.set({
-    basePath: '.',
     frameworks: ['jasmine'],
-    files: [
-      { pattern: 'src/**/*.ts' },
-    ],
-
-    preprocesors: {
-      'src/**/*.ts': ['webpack'],
+    files: ['src/**/*.spec.ts'],
+    preprocessors: {
+      'src/**/*.spec.ts': ['webpack'],
     },
-
-    webpack: webpackConfig,
-
-    webpackMiddleware: {
-      // webpack-dev-middleware configuration
-      // i. e.
-      stats: 'errors-only',
+    webpack: {
+        module: webpackConfig.module,
+        resolve: webpackConfig.resolve,
+        mode: webpackConfig.mode,
+        devtool: webpackConfig.devtool,
     },
+    reporters: ['spec'],
     browsers: ['ChromeHeadless'],
     singleRun: true,
   });

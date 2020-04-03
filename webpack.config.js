@@ -8,9 +8,7 @@ const htmlWebpackPlugin = new HtmlWebpackPlugin({
 module.exports = {
   entry: './src/index.ts',
   devtool: 'inline-source-map',
-  resolve: {
-    extensions: [ '.ts', '.js' ],
-  },
+  mode: 'development',
   module: {
     rules: [
       {
@@ -19,6 +17,9 @@ module.exports = {
         exclude: /node_modules/,
       }
     ]
+  },
+  resolve: {
+    extensions: [ '.ts', '.js' ],
   },
   output: {
     filename: 'bundle.js',
