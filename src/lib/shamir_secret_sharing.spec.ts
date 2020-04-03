@@ -1,12 +1,12 @@
 import { split, reconstruct } from './shamir_secret_sharing';
 
-const N = 3; // number of party
-const K = 2; // threshold
-
 describe('split', function() {
   it('generates shares from secret', function(){
-    const shares = split(1, N, K);
-    expect(shares.length).toEqual(N);
+    const s = 1; // secret
+    const n = 3; // number of party
+    const k = 2; // threshold
+    const shares = split(s, n, k);
+    expect(shares.length).toEqual(n);
   });
 });
 
