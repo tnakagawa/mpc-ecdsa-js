@@ -56,10 +56,20 @@ class LagrangePolynomial implements Polynomial {
         l *= (x - pj[0]) / (pi[0] - pj[0])
       }
       y += pi[1] * l;
+      console.log(y);
     }
     return y;
   }
 }
 
+function getLagurangePolynomial(points: Point[]): LagrangePolynomial {
+  const degree = points.length - 1;
+  const poly = new LagrangePolynomial(degree);
+  for (let i = 0; i < degree+1; i++) {
+    poly.points[i] = points[i];
+  }
+  return poly;
+}
 
-export { Polynomial, NormalPolynomial, getRandomPolynomial, LagrangePolynomial }
+
+export { Polynomial, NormalPolynomial, getRandomPolynomial, LagrangePolynomial, Point, getLagurangePolynomial}

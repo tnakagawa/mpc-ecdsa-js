@@ -10,10 +10,13 @@ describe('split', function() {
   });
 });
 
-xdescribe('reconstruct', function() {
+describe('reconstruct', function() {
   it('reconstructs secret from shares', function(){
+    // f(x) = 1 + 2x + 3x^2
+    // [x, f(x)]: [0, 1], [1, 6], [2, 17], [3, 34]
     const secret = 1;
-    const actual = reconstruct(split(secret, N, K), N, K);
+    const shares = [6, 17, 34];
+    const actual = reconstruct(shares);
     expect(actual).toEqual(secret);
   });
 });
