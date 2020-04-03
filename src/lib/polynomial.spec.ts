@@ -1,26 +1,32 @@
 import * as _ from 'lodash';
 
-import { Polynomial, getRandomPolynomial } from './polynomial';
+import {
+  Polynomial, NormalPolynomial, getRandomPolynomial, LagrangePolynomial
+} from './polynomial';
 
-describe('Polynomial', function() {
+function expectPoints(poly: Polynomial, points: number[][]) {
+  for (let p of points) {
+    expect(poly.f(p[0])).toEqual(p[1])
+  }
+}
+
+describe('NormalPolynomial', function() {
   describe('f', function() {
     it('calculates f(x)', function() {
-      function expectPoints(poly: Polynomial, points: number[][]) {
-        for (let p of points) {
-          expect(poly.f(p[0])).toEqual(p[1])
-        }
-      }
-      const poly0 = new Polynomial(0);
-      poly0.coefficients = [1] // f(x) = 1
+      // f(x) = 1
+      const poly0 = new NormalPolynomial(0);
+      poly0.coefficients = [1]
       expectPoints(poly0, [[0, 1], [1, 1], [2, 1]])
 
-      const poly1 = new Polynomial(1);
-      poly1.coefficients = [1, 2]; // f(x) = 1 + 2x
-      expectPoints(poly1, [[0, 1], [1, 3], [2, 5]])
+      // f(x) = 1 + 2x
+      const poly1 = new NormalPolynomial(1);
+      poly1.coefficients = [1, 2];
+      expectPoints(poly1, [[0, 1], [1, 3], [2, 5], [3, 7]])
 
-      const poly2 = new Polynomial(2);
-      poly2.coefficients = [1, 2, 3]; // f(x) = 1 + 2x + 3x^2
-      expectPoints(poly2, [[0, 1], [1, 6], [2, 17]])
+      // f(x) = 1 + 2x+ 3x^2
+      const poly2 = new NormalPolynomial(2);
+      poly2.coefficients = [1, 2, 3];
+      expectPoints(poly2, [[0, 1], [1, 6], [2, 17], [3, 34], [4, 57]])
     });
   });
 });
@@ -44,4 +50,25 @@ describe('getRandomPolynomial', function() {
     expect(poly2.coefficients.length).toEqual(3);
     expect(poly2.f(0)).toEqual(secret);
   });
+});
+
+describe('LagrangePolynomial', function() {
+  describe('f', function() {
+    it('calculates f(x)', function(){
+      // f(x) = 1
+      const poly0 = new LagrangePolynomial(0);
+      poly0.points = [[1, 1]] // f(x) = 1
+      expectPoints(poly0, [[0, 1], [2, 1]])
+
+      // f(x) = 1 + 2x
+      const poly1 = new LagrangePolynomial(1);
+      poly1.points = [[1, 3], [2, 5]] // f(x) = 1 + 2x
+      expectPoints(poly1, [[0, 1], [3, 7]])
+
+      // f(x) = 1 + 2x+ 3x^2
+      const poly2 = new LagrangePolynomial(2);
+      poly2.points = [[1, 6], [2, 17], [3, 34]]
+      expectPoints(poly2, [[0, 1], [4, 57]])
+    });
+  })
 });
