@@ -2,7 +2,7 @@ import { split, reconstruct } from './shamir_secret_sharing';
 
 describe('split', function() {
   it('generates shares from secret', function(){
-    const s = 1; // secret
+    const s = 9; // secret
     const n = 3; // number of party
     const k = 2; // threshold
     const shares = split(s, n, k);
@@ -13,10 +13,17 @@ describe('split', function() {
 describe('reconstruct', function() {
   it('reconstructs secret from shares', function(){
     // f(x) = 1 + 2x + 3x^2
-    // [x, f(x)]: [0, 1], [1, 6], [2, 17], [3, 34]
-    const secret = 1;
-    const shares = [6, 17, 34];
-    const actual = reconstruct(shares);
-    expect(actual).toEqual(secret);
+    const s = 9;
+    const n = 3;
+    const k = 2;
+    const shares = split(s, n, k);
+
+    // reconstruct with n shares
+    expect(reconstruct(shares)).toEqual(s);
+
+    // reconstruct with 2 of n
+    expect(reconstruct([shares[0], shares[1]])).toEqual(s);
+    expect(reconstruct([shares[0], shares[2]])).toEqual(s);
+    expect(reconstruct([shares[1], shares[2]])).toEqual(s);
   });
 });

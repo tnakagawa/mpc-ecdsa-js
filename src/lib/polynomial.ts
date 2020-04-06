@@ -56,7 +56,6 @@ class LagrangePolynomial implements Polynomial {
         l *= (x - pj[0]) / (pi[0] - pj[0])
       }
       y += pi[1] * l;
-      console.log(y);
     }
     return y;
   }
