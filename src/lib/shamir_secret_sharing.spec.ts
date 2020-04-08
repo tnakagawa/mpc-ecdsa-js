@@ -2,7 +2,7 @@ import { split, reconstruct } from './shamir_secret_sharing';
 
 describe('split', function() {
   it('generates shares from secret', function(){
-    const s = 9; // secret
+    const s = 9n; // secret
     const n = 3; // number of party
     const k = 2; // threshold
     const shares = split(s, n, k);
@@ -13,7 +13,7 @@ describe('split', function() {
 describe('reconstruct', function() {
   it('reconstructs secret from shares', function(){
     // f(x) = 1 + 2x + 3x^2
-    const s = 9;
+    const s = 9n;
     const n = 3;
     const k = 2;
     const shares = split(s, n, k);
