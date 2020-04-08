@@ -6,7 +6,7 @@ function component(): HTMLElement {
   const element = document.createElement('div');
 
   element.innerHTML = _.join(
-    ['Hello', 'MPC', 'ECDSA', reconstruct(split(1, 3, 2))], ' ', );
+    ['Hello', 'MPC', 'ECDSA', reconstruct(split(1n, 3, 2))], ' ', );
 
   return element;
 }

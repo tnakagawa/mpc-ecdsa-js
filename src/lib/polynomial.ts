@@ -3,40 +3,41 @@
  */
 import * as _ from 'lodash';
 
-import { getRandomValues } from './secure_random'
+import { getRandomValues } from './secure_random';
+import * as GF from './finite_field';
 
 interface Polynomial {
   degree: number;
-  f(x: number): number;
+  f(x: number|bigint): bigint;
 }
 
 class NormalPolynomial implements Polynomial {
   degree: number;
-  coefficients: number[];
+  coefficients: bigint[];
   constructor(degree: number) {
     this.degree = degree;
     this.coefficients = new Array(degree+1);
   }
-  f(x: number): number {
-    let y = 0;
+  f(x: bigint): bigint {
+    let y = 0n;
     for (let i = 0; i <= this.degree; i++) {
-      y += this.coefficients[i] * Math.pow(x, i);
+      y += this.coefficients[i] * (x ** BigInt(i));
     }
     return y;
   }
 }
 
-function getRandomPolynomial(degree: number, y0: number): NormalPolynomial {
+function getRandomPolynomial(degree: number, y0: bigint): NormalPolynomial {
   let poly = new NormalPolynomial(degree);
   poly.coefficients[0] = y0;
   const randomValues = getRandomValues(degree);
   for (let i = 1; i <= degree; i++) {
-    poly.coefficients[i] = randomValues[i-1];
+    poly.coefficients[i] = BigInt(randomValues[i-1]);
   }
   return poly;
 };
 
-type Point = [number, number];
+type Point = [bigint, bigint];
 
 class LagrangePolynomial implements Polynomial {
   degree: number;
@@ -45,17 +46,20 @@ class LagrangePolynomial implements Polynomial {
     this.degree = degree;
     this.points = new Array<Point>(degree+1);
   }
-  f(x: number): number {
-    let y = 0;
+  f(x: bigint): bigint {
+    let y = 0n;
     for (let i = 0; i < this.degree+1; i++) {
       let pi = this.points[i];
-      let l = 1;
+      let n = 1n;
+      let d = 1n;
       for (let j = 0; j < this.degree+1; j++) {
         if (i == j) continue;
         let pj = this.points[j];
-        l *= (x - pj[0]) / (pi[0] - pj[0])
+        n = GF.mul(n, GF.add(x, -1n * pj[0]));
+        d = GF.mul(d, GF.add(pi[0], -1n * pj[0]));
       }
-      y += pi[1] * l;
+      let l = GF.mul(n, GF.inv(d));
+      y = GF.add(y, GF.mul(pi[1], l))
     }
     return y;
   }

@@ -2,13 +2,13 @@ import * as _ from 'lodash';
 
 import { getRandomPolynomial, Point, getLagurangePolynomial} from './polynomial'
 
-export function split(secret: number, n: number, k: number): Point[] {
+export function split(secret: bigint, n: number, k: number): Point[] {
   const poly = getRandomPolynomial(k-1, secret);
 
   const shares = new Array<Point>();
-  for (let i = 0; i < n; i++) {
+  for (let i = 0n; i < n; i++) {
     // TODO: generate random x
-    let x = i + 1;
+    let x = i + 1n;
     let y = poly.f(x)
     shares.push([x, y]);
   }
@@ -16,7 +16,7 @@ export function split(secret: number, n: number, k: number): Point[] {
   return shares;
 };
 
-export function reconstruct(shares: Point[]): number {
+export function reconstruct(shares: Point[]): bigint {
   const poly = getLagurangePolynomial(shares);
-  return poly.f(0);
+  return poly.f(0n);
 };
