@@ -8,8 +8,8 @@ describe('MPC arithmetics', function() {
     const a = 1n;
     const b = 2n;
 
-    const a_shares = sss.split(a, n, k);
-    const b_shares = sss.split(b, n, k);
+    const a_shares = sss.share(a, n, k);
+    const b_shares = sss.share(b, n, k);
 
     const results: Point[] = [];
     // calculate [a] + [b] in each party
@@ -30,8 +30,8 @@ describe('MPC arithmetics', function() {
     const N = 10n;
     const M = 30n;
 
-    const a_shares = sss.split(a, n, k);
-    const b_shares = sss.split(b, n, k);
+    const a_shares = sss.share(a, n, k);
+    const b_shares = sss.share(b, n, k);
 
     const results: Point[] = [];
     // calculate [a] + [b] in each party
@@ -59,13 +59,13 @@ describe('MPC arithmetics', function() {
     };
 
     // share a
-    for (let [i, a_i] of sss.split(a, n, k)) {
+    for (let [i, a_i] of sss.share(a, n, k)) {
       let p = `p${i}`;
       shares[p]['a'] = a_i;
     }
 
     // share b
-    for (let [i, b_i] of sss.split(b, n, k)) {
+    for (let [i, b_i] of sss.share(b, n, k)) {
       let p = `p${i}`;
       shares[p]['b'] = b_i;
     }
@@ -74,7 +74,7 @@ describe('MPC arithmetics', function() {
     for (let i = 1; i <= n; i++) {
       let p = `p${i}`;
       let c_i = shares[p]['a'] * shares[p]['b'];
-      for (let [j, c_ij] of sss.split(c_i, n, k)) {
+      for (let [j, c_ij] of sss.share(c_i, n, k)) {
         shares[`p${j}`][`c${i}`] = c_ij;
       }
     }

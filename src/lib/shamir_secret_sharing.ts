@@ -2,7 +2,7 @@ import * as _ from 'lodash';
 
 import { getRandomPolynomial, Point, getLagurangePolynomial} from './polynomial'
 
-export function split(secret: bigint, n: number, k: number): Point[] {
+export function share(secret: bigint, n: number, k: number): Point[] {
   const poly = getRandomPolynomial(k-1, secret);
 
   const shares = new Array<Point>();

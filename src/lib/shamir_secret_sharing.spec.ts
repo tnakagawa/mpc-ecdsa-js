@@ -1,11 +1,11 @@
-import { split, reconstruct } from './shamir_secret_sharing';
+import { share, reconstruct } from './shamir_secret_sharing';
 
 describe('split', function() {
   it('generates shares from secret', function(){
     const s = 9n; // secret
     const n = 3; // number of party
     const k = 2; // threshold
-    const shares = split(s, n, k);
+    const shares = share(s, n, k);
     expect(shares.length).toEqual(n);
   });
 });
@@ -16,7 +16,7 @@ describe('reconstruct', function() {
     const s = 9n;
     const n = 3;
     const k = 2;
-    const shares = split(s, n, k);
+    const shares = share(s, n, k);
 
     // reconstruct with n shares
     expect(reconstruct(shares)).toEqual(s);
