@@ -1,22 +1,22 @@
+import * as sinon from 'sinon';
 import * as sss from './shamir_secret_sharing';
 import { Variable, Party, LocalStorageSession, MPC } from './mpc';
 
-function emulateStoageEvent() {
-  // emulate storage event
-  const setItemStub = spyOn(window.localStorage, 'setItem');
-  setItemStub.and.callFake((key: string, value: string) => {
-    setItemStub.and.callThrough();
+// TODO: move to setup and recover teardown
+(function emulateStorageEvent() {
+  const origSetItem = window.localStorage.setItem;
+  sinon.stub(window.localStorage, 'setItem').callsFake((k: string, v: string) => {
     const event: StorageEventInit = {
       storageArea: localStorage,
-      key: key,
-      newValue: value,
+      key: k,
+      newValue: v,
       oldValue: null,
     }
-    console.log(event);
+    console.debug('dispatching event');
     window.dispatchEvent(new StorageEvent('storage', event))
+    origSetItem.apply(window.localStorage, [k, v]);
   });
-  return setItemStub;
-};
+})();
 
 async function background(f: () => void, delay: number = 0) {
   return new Promise((resolve, _reject) => {
@@ -129,8 +129,6 @@ describe('Party', function() {
     const a2 = new Variable('a', 1n);
     a2.split(3, 2);
 
-    emulateStoageEvent();
-
     background(() => {
       p2.sendShare(1, a2);
     });
@@ -141,7 +139,7 @@ describe('Party', function() {
 
 describe('MPC', function() {
   it('computes addition', async function() {
-    const session = LocalStorageSession.init('test');
+    const session = LocalStorageSession.init('test_addition');
     const p1 = new Party(1, session);
     const p2 = new Party(2, session);
     const p3 = new Party(3, session);
@@ -153,8 +151,6 @@ describe('MPC', function() {
     p2.connect();
     p3.connect();
     dealer.connect();
-
-    emulateStoageEvent();
 
     // Each party does calculation
     for (let p of [p1, p2, p3]) {
@@ -175,14 +171,60 @@ describe('MPC', function() {
       const b = new Variable('b', 3n);
       const c = new Variable('c');
 
+      // broadcast shares of 'a' and 'b'
       a.split(3, 2);
       b.split(3, 2);
-
       for (let pId of [1, 2, 3]) {
         await dealer.sendShare(pId, a);
+        await dealer.sendShare(pId, b);
       }
 
       for (let pId of [1, 2, 3]) {
+        await dealer.receiveShare(c, pId);
+      }
+      expect(c.reconstruct()).toEqual(a.secret + b.secret);
+    });
+  });
+
+  it('computes multiplication', async function() {
+    const session = LocalStorageSession.init('test_multiplication');
+    const p1 = new Party(1, session);
+    const p2 = new Party(2, session);
+    const p3 = new Party(3, session);
+    const dealer = new Party(999, session);
+    const conf = { n: 3, k: 2, dist: dealer.id }
+
+    // All participants connect to the network
+    p1.connect();
+    p2.connect();
+    p3.connect();
+    dealer.connect();
+
+    // Each party does calculation
+    for (let p of [p1, p2, p3]) {
+      background(async () => {
+        const mpc = new MPC(p, conf);
+
+        const a = new Variable('a');
+        const b = new Variable('b');
+        const c = new Variable('c');
+
+        await mpc.mul(c, a, b);
+        mpc.p.sendShare(dealer.id, c, p.id);
+      });
+    }
+
+    // Dealer sends shares and recieves the computed shares from each party
+    await background(async () => {
+      const a = new Variable('a', 2n);
+      const b = new Variable('b', 3n);
+      const c = new Variable('c');
+
+      // broadcast shares of 'a' and 'b'
+      a.split(3, 2);
+      b.split(3, 2);
+      for (let pId of [1, 2, 3]) {
+        await dealer.sendShare(pId, a);
         await dealer.sendShare(pId, b);
       }
 
