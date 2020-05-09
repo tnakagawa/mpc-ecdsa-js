@@ -1,5 +1,6 @@
 import * as _ from 'lodash';
 import { MPC, Party, LocalStorageSession, Share, Secret } from './lib/mpc';
+import { P } from './lib/finite_field';
 const _css = require('./demo.css');
 
 // Expose MPC Lib
@@ -59,7 +60,7 @@ function initMPC() {
   const dealer = new mpclib.Party(pId, session);
   const n = Number(urlParams.get('n') || 3);
   const k = Number(urlParams.get('k') || 2);
-  const conf = { n: n, k: k }
+  const conf = { n: n, k: k, p: P }
   return new mpclib.MPC(dealer, conf);
 };
 
@@ -126,28 +127,33 @@ function demoMul(mpc: MPC) {
 }
 
 function initUI(mpc: MPC) {
-  renderPartyAndSettings(mpc);
+  renderSettings(mpc);
   renderVariables();
 }
 
-function renderPartyAndSettings(mpc: MPC) {
-  const p = document.getElementById('party');
-  const id = (mpc.p.id == DEALER) ? 'Dealer' : mpc.p.id;
-  p.innerHTML = _.template(p.innerText)({ id: id });
+const settingsTamplate = `
+<ul>
+  <li>Party: <%= party %></li>
+  <li>N: <%= n %></li>
+  <li>K: <%= k %></li>
+  <li>P: <%= p %></li>
+</ul>
+`;
 
+function renderSettings(mpc: MPC) {
+  const id = (mpc.p.id == DEALER) ? 'Dealer' : mpc.p.id;
   const s = document.getElementById('settings');
-  s.innerHTML = _.template(s.innerText)(
-    { n: mpc.conf.n, k: mpc.conf.k });
+  s.innerHTML = _.template(settingsTamplate)(
+    { party: id, n: mpc.conf.n, k: mpc.conf.k, p: mpc.conf.p });
 }
 
-const variablesHTML = `
+const variablesTemplate = `
 <ul>
   <% _.each(variables, function(variable) { %>
     <li><pre><%= prettyPrint(variable) %></pre></li>
   <% }) %>
 </ul>
 `;
-
 
 function renderVariables() {
   function prettyPrint(v: Variable): string {
@@ -177,7 +183,7 @@ function renderVariables() {
   }
 
   const el = document.getElementById('variables');
-  el.innerHTML = _.template(variablesHTML)({
+  el.innerHTML = _.template(variablesTemplate)({
     variables: Object.values(vars), prettyPrint: prettyPrint
   });
 }

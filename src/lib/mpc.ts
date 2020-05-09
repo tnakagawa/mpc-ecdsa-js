@@ -248,6 +248,7 @@ class MPC {
 type MPCConfig = {
   n: number,
   k: number,
+  p?: bigint,
 }
 
 export { Secret, Share, Party, MPC, MPCConfig, LocalStorageSession };
