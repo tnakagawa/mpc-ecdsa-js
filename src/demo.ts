@@ -57,7 +57,9 @@ function initMPC() {
   const urlParams = new URLSearchParams(window.location.search);
   const pId = Number(urlParams.get('party'));
   const dealer = new mpclib.Party(pId, session);
-  const conf = { n: 3, k: 2 }
+  const n = Number(urlParams.get('n') || 3);
+  const k = Number(urlParams.get('k') || 2);
+  const conf = { n: n, k: k }
   return new mpclib.MPC(dealer, conf);
 };
 
@@ -124,14 +126,18 @@ function demoMul(mpc: MPC) {
 }
 
 function initUI(mpc: MPC) {
-  renderParty(mpc);
+  renderPartyAndSettings(mpc);
   renderVariables();
 }
 
-function renderParty(mpc: MPC) {
-  const el = document.getElementById('party');
+function renderPartyAndSettings(mpc: MPC) {
+  const p = document.getElementById('party');
   const id = (mpc.p.id == DEALER) ? 'Dealer' : mpc.p.id;
-  el.innerHTML = _.template(el.innerText)({ id: id });
+  p.innerHTML = _.template(p.innerText)({ id: id });
+
+  const s = document.getElementById('settings');
+  s.innerHTML = _.template(s.innerText)(
+    { n: mpc.conf.n, k: mpc.conf.k });
 }
 
 const variablesHTML = `
