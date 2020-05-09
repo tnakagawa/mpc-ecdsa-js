@@ -164,7 +164,9 @@ function renderVariables() {
 
   const vars: { [key: string]: Variable } = {};
   for (let v of window.variables) {
-    if (v.name in vars) continue;
+    if (v.name in vars &&
+      v instanceof Share &&
+      vars[v.name] instanceof Secret) continue;
     vars[v.name] = v;
   }
 

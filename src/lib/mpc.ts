@@ -23,8 +23,9 @@ class Secret {
     this._value = v;
     if (this.onSetValue) this.onSetValue();
   }
-  setShare(s: Share) {
-    this.shares[String(s.index)] = s;
+  setShare(idx: bigint | number, value: bigint) {
+    const s = new Share(this.name, Number(idx), value);
+    this.shares[String(idx)] = s;
     if (this.onSetShare) this.onSetShare();
   }
   getShare(idx: bigint | number): Share {
@@ -36,8 +37,7 @@ class Secret {
   }
   split(n: number, k: number) {
     for (let [idx, v] of sss.share(this.value, n, k)) {
-      let s = new Share(this.name, Number(idx), v);
-      this.setShare(s);
+      this.setShare(idx, v);
     }
     return this.shares;
   }

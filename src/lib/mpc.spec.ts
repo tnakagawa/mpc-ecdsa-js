@@ -30,9 +30,9 @@ async function background(f: () => void, delay: number = 0) {
 describe('Variable', function() {
   it('holds sahres', function() {
     const a = new Secret('a')
-    a.setShare(new Share('a', 1, 1n))
-    a.setShare(new Share('a', 2, 2n))
-    a.setShare(new Share('a', 3, 3n))
+    a.setShare(1, 1n)
+    a.setShare(2, 2n)
+    a.setShare(3, 3n)
     expect(a.getShare(1).value).toEqual(1n)
     expect(a.getShare(2).value).toEqual(2n)
     expect(a.getShare(3).value).toEqual(3n)
@@ -69,7 +69,7 @@ describe('Variable', function() {
     const k = 2;
     const a = new Secret('a');
     for (let [idx, value] of sss.share(secret, n, k)) {
-      a.setShare(new Share('a', Number(idx), value));
+      a.setShare(idx, value);
     }
 
     expect(a.reconstruct()).toEqual(secret);
