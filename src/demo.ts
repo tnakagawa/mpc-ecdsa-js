@@ -11,16 +11,22 @@ import './demo.css';
 declare global {
   interface Window {
     mpclib: any;
-    variables: Array<Variable>;
+    MPCVars: { [key: string]: Variable };
     mpc: MPC;
     demos: { [key: string]: { [key: string]: Function } };
+    GF: any;
   }
 }
 
-window.variables = [];
+window.MPCVars = {};
 
 Variable.prototype.onCreate = function() {
-  window.variables.push(this);
+  const oldVar = window.MPCVars[this.name];
+  if (!oldVar
+    || this instanceof Secret
+    || !(this instanceof Secret) && !(oldVar instanceof Secret)) {
+    window.MPCVars[this.name] = this;
+  }
   renderVariables();
 }
 Variable.prototype.onSetValue = function() {
@@ -41,6 +47,8 @@ const mpclib = {
 
 
 window.mpclib = mpclib;
+
+window.GF = GF;
 
 // Dealer uses fixed ID in demo
 const DEALER = 999;
@@ -67,15 +75,16 @@ const settingsTamplate = `
   <li>Party: <%= party %></li>
   <li>N: <%= n %></li>
   <li>K: <%= k %></li>
-  <li>P: <%= p %></li>
+  <li>GF.P: <%= p %></li>
 </ul>
 `;
 
 function renderSettings(mpc: MPC) {
   const id = (mpc.p.id == DEALER) ? 'Dealer' : mpc.p.id;
   const s = document.getElementById('settings');
+  const P = '0x' + mpc.conf.p.toString(16);
   s.innerHTML = _.template(settingsTamplate)(
-    { party: id, n: mpc.conf.n, k: mpc.conf.k, p: mpc.conf.p });
+    { party: id, n: mpc.conf.n, k: mpc.conf.k, p: P });
 }
 
 const variablesTemplate = `
@@ -91,12 +100,13 @@ function renderVariables() {
     const dict = {
       name: v.name,
       // TODO: convert to hex string
-      value: Number(v.value),
+      value: v.toHex(),
       shares: {},
     }
-    const shares: { [key: string]: Number } = {};
+    const shares: { [key: string]: string } = {};
     for (let k in (v as Secret).shares) {
-      shares[k] = Number((v as Secret).shares[k].value);
+      const s = (v as Secret).shares[k];
+      shares[k] = (s) ? s.toHex() : '';
     }
     dict.shares = shares;
     if (v instanceof Share) {
@@ -105,17 +115,9 @@ function renderVariables() {
     return v.constructor.name + JSON.stringify(dict, null, 2);
   }
 
-  const vars: { [key: string]: Variable } = {};
-  for (let v of window.variables) {
-    if (v.name in vars &&
-      v instanceof Share &&
-      vars[v.name] instanceof Secret) continue;
-    vars[v.name] = v;
-  }
-
   const el = document.getElementById('variables');
   el.innerHTML = _.template(variablesTemplate)({
-    variables: Object.values(vars), prettyPrint: prettyPrint
+    variables: Object.values(window.MPCVars), prettyPrint: prettyPrint
   });
 }
 
