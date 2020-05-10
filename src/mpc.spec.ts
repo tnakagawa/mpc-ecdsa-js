@@ -1,7 +1,6 @@
 import { Point } from './lib/polynomial';
 import * as sss from './lib/shamir_secret_sharing';
-import * as secureRandom from './lib/secure_random';
-import * as G from './lib/finite_field';
+import * as GF from './lib/finite_field';
 
 describe('MPC arithmetics', function() {
   it('[a + b] = [a] + [b]', function() {
@@ -108,9 +107,8 @@ describe('MPC arithmetics', function() {
       'p3': {},
     };
 
-    // TODO: generate random in finite field
-    const r = BigInt(secureRandom.getRandomValues(1)[0]) % G.P;
-    const t = G.mul(r, a); // t is known by all perties
+    const r = GF.rand();
+    const t = GF.mul(r, a); // t is known by all perties
 
     // share r
     for (let [i, b_i] of sss.share(r, n, k)) {
@@ -120,12 +118,12 @@ describe('MPC arithmetics', function() {
     // each party locally calculate t^-1 * r
     const a_inv_shares: Point[] = [];
     for (let i = 1; i <= n; i++) {
-      let t_inv = G.inv(t);
+      let t_inv = GF.inv(t);
       let a_inv_i = t_inv * shares[`p${i}`]['r'];
       a_inv_shares.push([BigInt(i), a_inv_i]);
     }
 
     // reconstructed a_inv * a mod P should be 1
-    expect(G.mul(a, sss.reconstruct(a_inv_shares))).toEqual(1n);
+    expect(GF.mul(a, sss.reconstruct(a_inv_shares))).toEqual(1n);
   })
 });
