@@ -1,12 +1,14 @@
-import * as ellipic from 'elliptic'
+import * as elliptic from 'elliptic';
+const Signature = require('elliptic/lib/elliptic/ec/signature');
 
-import { emulateStorageEvent, background, expectToBeReconstructable } from './test_utils';
+import { sha256 } from './crypto';
 import * as GF from './finite_field';
-import { Secret, Share, Party, LocalStorageSession, MPC } from './mpc';
+import { Secret, Share, MPC } from './mpc';
 import * as ecdsa from './ecdsa';
+import { emulateStorageEvent, background, expectToBeReconstructable, setupParties } from './test_utils';
 
 // elliptic curve
-const ec = new ellipic.ec('secp256k1');
+const ec = new elliptic.ec('secp256k1');
 
 function expectToBeReconstructablePubkey(priv: Secret, points: Array<[number, ecdsa.ECPoint]>) {
   const keyPair = ec.keyFromPrivate(priv.value.toString(16), 'hex');
@@ -30,23 +32,12 @@ describe('MPCEC', function() {
   });
   describe('reconstruct', function() {
     it('reconstructs pubkey from shares', async function() {
-      const session = LocalStorageSession.init('test_ec_keygen');
-      const p1 = new Party(1, session);
-      const p2 = new Party(2, session);
-      const p3 = new Party(3, session);
-      const dealer = new Party(999, session);
-      const conf = { n: 3, k: 2 };
-
-      // All participants connect to the network
-      p1.connect();
-      p2.connect();
-      p3.connect();
-      dealer.connect();
+      setupParties(this, 'test_ec_reconstruct');
 
       // Party
-      for (let p of [p1, p2, p3]) {
+      for (let p of this.parties) {
         background(async () => {
-          const mpc = new MPC(p, conf);
+          const mpc = new MPC(p, this.conf);
 
           // generate priv key shares
           const priv = new Share('priv', p.id);
@@ -62,18 +53,18 @@ describe('MPCEC', function() {
           const y = pub.getY().toJSON()
           const pubY = new Share('pubY', p.id, `0x${y}`);
 
-          await mpc.p.sendShare(pubX, dealer.id);
-          await mpc.p.sendShare(pubY, dealer.id);
+          await mpc.p.sendShare(pubX, this.dealer.id);
+          await mpc.p.sendShare(pubY, this.dealer.id);
         });
       }
 
       // Dealer
       await background(async () => {
-        const mpc = new MPC(dealer, conf);
+        const mpc = new MPC(this.dealer, this.conf);
 
         const priv = new Secret('priv', GF.rand());
         for (let [idx, share] of Object.entries(mpc.split(priv))) {
-          await dealer.sendShare(share, Number(idx));
+          await mpc.sendShare(share, Number(idx));
         }
 
         const pubX = new Secret('pubX');
@@ -81,8 +72,8 @@ describe('MPCEC', function() {
         // recieve result shares from parties
         const points: Array<[number, ecdsa.ECPoint]> = [];
         for (let pId of [1, 2, 3]) {
-          await dealer.receiveShare(pubX.getShare(pId));
-          await dealer.receiveShare(pubY.getShare(pId));
+          await mpc.p.receiveShare(pubX.getShare(pId));
+          await mpc.p.receiveShare(pubY.getShare(pId));
           const P = ec.keyFromPublic({
             x: pubX.getShare(pId).value.toString(16),
             y: pubY.getShare(pId).value.toString(16)
@@ -96,42 +87,76 @@ describe('MPCEC', function() {
   });
   describe('keyGen', function() {
     it('generates private key shares', async function() {
-      const session = LocalStorageSession.init('test_ec_keygen');
-      const p1 = new Party(1, session);
-      const p2 = new Party(2, session);
-      const p3 = new Party(3, session);
-      const dealer = new Party(999, session);
-      const conf = { n: 3, k: 2 };
+      setupParties(this, 'test_ec_keygen');
 
-      // All participants connect to the network
-      p1.connect();
-      p2.connect();
-      p3.connect();
-      dealer.connect();
+      const futures = [];
+      for (let p of this.parties) {
+        const future = background(async () => {
+          const mpc = new ecdsa.MPCECDsa(p, this.conf, ec);
 
-      // Party
-      for (let p of [p1, p2, p3]) {
-        background(async () => {
-          const mpc = new ecdsa.MPCECDsa(p, conf, ec);
+          const privkey = new Share('privateKey', p.id);
+          const pubkey = await mpc.keyGen(privkey);
 
-          await mpc.keyGen()
-
-          // send private key share for assertion
-          await mpc.p.sendShare(mpc.privateKey, p1.id);
-
-          // Party1 reconstructs keyPair on behalf of the parties.
-          if (p != p1) return;
-
-          const priv = new Secret('privateKey');
-          for (let pId of [1, 2, 3]) {
-            await p.receiveShare(priv.getShare(pId));
+          // Party1 reconstructs keyPair and assert on behalf of the parties.
+          await mpc.p.sendShare(privkey, this.p1.id);
+          if (p.id == this.p1.id) {
+            const priv = new Secret('privateKey');
+            for (let pId of [1, 2, 3]) {
+              await p.receiveShare(priv.getShare(pId));
+            }
+            expectToBeReconstructable(priv);
+            const pub = mpc.curve.keyFromPrivate(
+              priv.value.toString(16)).getPublic();
+            expect(pubkey.eq(pub)).toBeTruthy();
           }
-          expectToBeReconstructable(priv);
-          const pub = mpc.curve.keyFromPrivate(
-            priv.value.toString(16)).getPublic();
-          expect(mpc.publicKey.eq(pub)).toBeTruthy();
         });
+        futures.push(future);
       }
+
+      await Promise.all(futures);
+    });
+  });
+  describe('sign', function() {
+    it('signs to message with private key shares', async function() {
+      setupParties(this, 'test_ec_sign');
+
+      const m = 'hello mpc ecdsa';
+
+      const futures = [];
+      for (let p of this.parties) {
+        const future = background(async () => {
+          const mpc = new ecdsa.MPCECDsa(p, this.conf, ec);
+
+          // generate private key.
+          const privkey = new Share('privateKey', p.id);
+          const pubkey = await mpc.keyGen(privkey);
+
+          // sign to the message.
+          const sig = await mpc.sign(m, privkey, pubkey);
+
+          // Party1 reconstructs keyPair and leave logs.
+          await mpc.p.sendShare(privkey, this.p1.id);
+
+          if (p.id == this.p1.id) {
+            const priv = new Secret('privateKey');
+            for (let pId of [1, 2, 3]) {
+              await p.receiveShare(priv.getShare(pId));
+            }
+            expectToBeReconstructable(priv);
+
+            const keyPair = mpc.curve.keyFromPublic(
+              pubkey.encodeCompressed('hex'), 'hex');
+            console.log(`PrivateKey: ${priv.toHex()}`);
+            console.log(`Publickey(compressed): ${keyPair.getPublic(true, 'hex')}`);
+            console.log(`Publickey: X=${keyPair.getPublic().getX().toJSON()}, Y=${keyPair.getPublic().getY().toJSON()}`)
+            console.log(`Message = SHA256('${m}'): ${await sha256(m)}`);
+            console.log(`Signature(DER): ${sig.toDER('hex')}`)
+          }
+        });
+        futures.push(future);
+      }
+
+      await Promise.all(futures);
     });
   });
 });
